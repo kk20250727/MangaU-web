@@ -22,21 +22,35 @@ type WorkDetail = {
 
 async function getWorkDetail(id: string): Promise<WorkDetail | null> {
   try {
-    // 相対パスを使用して現在のホストでAPIを呼び出す
-    const res = await fetch(`/api/works/${id}`, {
+    console.log(`Fetching work detail for ID: ${id}`);
+    // SSRでは絶対URLを使用する必要がある
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3003';
+    const res = await fetch(`${baseUrl}/api/works/${id}`, {
       next: { revalidate: 3600 }
     });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    console.log(`API response status: ${res.status}`);
+    if (!res.ok) {
+      console.error(`API request failed: ${res.status} ${res.statusText}`);
+      return null;
+    }
+    const data = await res.json();
+    console.log(`API response data:`, data);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching work detail:`, error);
     return null;
   }
 }
 
 export default async function WorkDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  console.log(`WorkDetail component called with ID: ${id}`);
+  
   const work = await getWorkDetail(id);
-  if (!work) return notFound();
+  if (!work) {
+    console.error(`Failed to get work detail for ID: ${id}`);
+    return notFound();
+  }
 
   return (
     <div className="min-h-screen p-6 sm:p-10">
