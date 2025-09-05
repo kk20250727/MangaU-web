@@ -39,3 +39,4 @@ export const WORKS: MangaWork[] = [
       "https://res.cloudinary.com/hstqcxa7w/image/fetch/s--bTf8AWt3--/c_fit,f_auto,fl_lossy,h_256,q_auto,w_180/https://manba-storage-production.s3-ap-northeast-1.amazonaws.com/uploads/book/regular_thumbnail/983253/8f851e02-cb87-4026-8934-f8f28d788993.jpg",
   },
 ];
+
