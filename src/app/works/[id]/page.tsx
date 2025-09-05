@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type WorkDetail = {
   id: string;
@@ -20,36 +23,66 @@ type WorkDetail = {
   relatedWorks: Array<{ id: string; title: string; cover: string | null }>;
 };
 
-async function getWorkDetail(id: string): Promise<WorkDetail | null> {
-  try {
-    console.log(`Fetching work detail for ID: ${id}`);
-    // SSRでは絶対URLを使用する必要がある
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3003';
-    const res = await fetch(`${baseUrl}/api/works/${id}`, {
-      next: { revalidate: 3600 }
-    });
-    console.log(`API response status: ${res.status}`);
-    if (!res.ok) {
-      console.error(`API request failed: ${res.status} ${res.statusText}`);
-      return null;
-    }
-    const data = await res.json();
-    console.log(`API response data:`, data);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching work detail:`, error);
-    return null;
-  }
-}
+export default function WorkDetail({ params }: { params: Promise<{ id: string }> }) {
+  const [work, setWork] = useState<WorkDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function WorkDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  console.log(`WorkDetail component called with ID: ${id}`);
-  
-  const work = await getWorkDetail(id);
-  if (!work) {
-    console.error(`Failed to get work detail for ID: ${id}`);
-    return notFound();
+  useEffect(() => {
+    async function fetchWorkDetail() {
+      try {
+        const { id } = await params;
+        console.log(`Fetching work detail for ID: ${id}`);
+        const res = await fetch(`/api/works/${id}`);
+        console.log(`API response status: ${res.status}`);
+        if (!res.ok) {
+          console.error(`API request failed: ${res.status} ${res.statusText}`);
+          setError("データの取得に失敗しました");
+          return;
+        }
+        const data = await res.json();
+        console.log(`API response data:`, data);
+        setWork(data);
+      } catch (error) {
+        console.error(`Error fetching work detail:`, error);
+        setError("データの取得中にエラーが発生しました");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchWorkDetail();
+  }, [params]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-6 sm:p-10">
+        <div className="max-w-4xl mx-auto">
+          <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-6">
+            ← トップに戻る
+          </Link>
+          <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900">
+            <div className="text-lg font-semibold mb-2">読み込み中...</div>
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">作品データを取得しています。</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !work) {
+    return (
+      <div className="min-h-screen p-6 sm:p-10">
+        <div className="max-w-4xl mx-auto">
+          <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-6">
+            ← トップに戻る
+          </Link>
+          <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900">
+            <div className="text-lg font-semibold mb-2">詳細データの取得に失敗しました</div>
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">{error || "時間をおいて再読み込みしてください。"}</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
